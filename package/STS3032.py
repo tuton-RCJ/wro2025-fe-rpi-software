@@ -39,7 +39,6 @@ class sts3032:
         print("Front servo is set to servo mode")
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, 0, 0)
         time.sleep(1)
-        print("Front servo initialized successfully" if flag else "Front servo initialization failed.")
             
         scs_model_number, scs_comm_result, scs_error = self.packetHandler.ping(self.back_servo_id)
         if scs_comm_result != COMM_SUCCESS:
@@ -51,7 +50,6 @@ class sts3032:
             print("%s" % self.packetHandler.getRxPacketError(scs_error))
         self.packetHandler.WheelMode(self.back_servo_id)
         print("Back servo is set to wheel mode.")
-        print("Back servo initialized successfully" if flag else "Back servo initialization failed.")
         
         print("STS3032 initialized successfully" if flag else "STS3032 initialization failed.")
 
