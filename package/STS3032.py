@@ -9,6 +9,7 @@ class sts3032:
         self.front_servo_id = front_servo_id
         self.back_servo_id = back_servo_id
         self.center_degree = center_degree
+        self.default_speed = default_speed
         self._init_port()
     
     def _init_port(self):
