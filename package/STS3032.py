@@ -1,7 +1,6 @@
 from scservo_sdk import *
 import time 
 
-sys.path.append("..")
 class sts3032:
     def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=2048, default_speed=30):
         self.portHandler = PortHandler(port)
@@ -62,6 +61,8 @@ class sts3032:
             speed (int): Speed of the back servo. Range is 1 to 100.
             degree (float): Degree of the front servo. Degrees is restricted to -30° to 30°. 
         """
+        self.stop()
+        time.sleep(0.01)
         if speed == -1:
             speed = self.default_speed
         else:
