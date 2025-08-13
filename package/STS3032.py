@@ -8,6 +8,7 @@ class sts3032:
         self.back_servo_id = back_servo_id
         self.center_degree = center_degree
         self.default_speed = default_speed
+        self.max_deg = 65
         self._init_port()
     
     def _init_port(self):
@@ -69,7 +70,7 @@ class sts3032:
         if degree == -1:
             degree = 0
         else:
-            degree = max(-60, min(degree, 60))
+            degree = max(-self.max_deg, min(degree, self.max_deg))
         speed *= 75
         degree = int(degree/360 * 4096 + self.center_degree)
         self.packetHandler.WritePosEx(self.front_servo_id, degree, speed, 0)
@@ -77,8 +78,8 @@ class sts3032:
         time.sleep(degree/speed + 0.01) # Adjust sleep time to ensure the command is processed
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
     
-    def turn_left(self, angle=30):
-        angle = min(angle, 30)
+    def turn_left(self, angle=65):
+        angle = min(angle, self.max_deg)
         target_degree = self.center_degree + int(angle/360 * 4096)
         self.packetHandler.WritePosEx(self.front_servo_id, target_degree, self.default_speed * 75, 0)
         time.sleep(0.1)
@@ -89,8 +90,8 @@ class sts3032:
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
         time.sleep(0.1)
 
-    def turn_right(self, angle=30):
-        angle = min(angle, 30) 
+    def turn_right(self, angle=65):
+        angle = min(angle, self.max_deg) 
         target_degree = self.center_degree - int(angle/360 * 4096)
         self.packetHandler.WritePosEx(self.front_servo_id, target_degree, self.default_speed * 75, 0)
         time.sleep(0.1)
@@ -100,24 +101,6 @@ class sts3032:
         time.sleep(0.1)
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
         time.sleep(0.1)
-
-    def move_forward(self, distance, speed=None):
-        if speed is None:
-            speed = self.default_speed
-        else:
-            speed = max(1, min(speed, 100))
-        
-        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, speed * 75, 0)
-        time.sleep(0.1)
-
-        base_speed_mps = 0.3 
-        actual_speed_mps = base_speed_mps * (speed / 30.0)
-        move_time = distance / actual_speed_mps
-        
-        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(move_time)
-        
-        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
 
 
     def close_port(self):
