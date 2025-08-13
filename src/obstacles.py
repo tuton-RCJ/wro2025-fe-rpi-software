@@ -1,4 +1,5 @@
 import sys
+from time import time
 import numpy as np
 sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
 from UnitV import UnitV
@@ -12,9 +13,11 @@ lidar.turn_on()
 image_width = 160
 fov = 60 # degrees
 direct = 0 # 1 if clockwise else -1
-target_dist = [20, 50, 80]
+turn_cnt = 0
+target_dist = [20, 50, 20]
+thres_forward_dist = 0.6
 
-objects = [[-1 for j in range(3)] for i in range(4)] # -1: not yet explored, 0: There are NO OBSTACLES 1: red, 2: green 
+objects = [[-1 for j in range(2)] for i in range(4)] # -1: not yet explored, 0: There are NO OBSTACLES 1: red, 2: green 
 
 def get_dist(angle): # this function is expected to use after executing lidar.update()
     rad_a = np.deg2rad(angle)
@@ -46,9 +49,9 @@ def decide_clockwise():
     return 1 if get_side_dist()[0] > get_side_dist()[1] else -1
 
 def forward_to_specified_dist(dist):
-    sts3032.drive()
     while get_dist(0) > dist:
         lidar.update()
+    sts.stop()
 
 def turn_corner():
     forward_to_specified_dist(0.6)
@@ -56,6 +59,27 @@ def turn_corner():
         sts.turn_right()
     else:
         sts.turn_left()
+
+def escape_from_parking():
+    decide_clockwise()
+    if direct == 1:
+        sts.turn_right(speed=-75, angle=65)
+        time.sleep(0.1)
+        sts.turn_left(speed=-75, angle=65)
+    else:
+        sts.turn_left(speed=-75, angle=65)
+        time.sleep(0.1)
+        sts.turn_right(speed=-75, angle=65)
+
+def enter_to_parking():
+    if direct == 1:
+        sts.turn_left(speed=-75, angle=65)
+        time.sleep(0.1)
+        sts.turn_right(speed=-75, angle=65)
+    else:
+        sts.turn_right(speed=-75, angle=65)
+        time.sleep(0.1)
+        sts.turn_left(speed=-75, angle=65)
 
 class PID_towall:
     def __init__(self, target_lane=1):
@@ -68,8 +92,8 @@ class PID_towall:
         self._target_distance = target_dist[target_lane]
     
     def update(self):
-        current_distance = get_dist(direct*90)
-        
+        current_distance = get_dist(direct*(90 if direct == 0 else -90))
+
         error = self._target_distance - current_distance
         
         p = self._kp * error
@@ -88,3 +112,46 @@ class PID_towall:
         self._target_distance = target_dist[target_lane]
         self.reset()
 
+if __name__ == "__main__":
+    escape_from_parking()
+    pid = PID_towall()
+    now_index = 0
+    now_color = -1
+    turn_cnt = 0
+    while turn_cnt < 12:
+        lidar.update()
+        red, green = uv.update_data()
+        pid.update()
+        if not uv.is_empty():
+            red_dist = get_obj_dist(red) if red != 255 else float('inf')
+            green_dist = get_obj_dist(green) if green != 255 else float('inf')
+            if red_dist < green_dist:
+                if now_color != 1:
+                    now_index = 1
+                objects[turn_cnt%4][now_index] = 1
+                now_color = 1
+                pid.switch_lane(2)
+            else:
+                if now_color != 2:
+                    now_index = 1
+                objects[turn_cnt%4][now_index] = 2
+                now_color = 2
+                pid.switch_lane(0)
+        else:
+            now_color = 0
+            pid.switch_lane(1)
+        if get_dist(0) < thres_forward_dist and now_color == 0:
+            forward_to_specified_dist(thres_forward_dist)
+            if direct == 1:
+                sts.turn_right()
+            else:
+                sts.turn_left()
+            now_color = -1
+            now_index = 0
+    while get_dist(180) < 1.2:
+        lidar.update()
+        red, green = uv.update_data()
+        pid.update()
+        pid.switch_lane(2)
+    sts.stop()
+    enter_to_parking()
