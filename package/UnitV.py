@@ -8,11 +8,15 @@ class UnitV:
         self.reds = []
     
     def update_data(self):
-        # 赤の中心座標(X,Y), 緑の重心座標(X,Y)
+        # 赤の中心座標(X), 緑の重心座標(X)
         if self.ser.in_waiting == 0:
             while self.ser.in_waiting == 0:
                 pass
         while self.ser.in_waiting > 1:
             self.ser.readline()
         ob = list(map(int,self.ser.readline().strip()))
-        return ob[:2], ob[2:]
+        return ob[0], ob[2]
+    
+    def is_empty(self):
+        ud = self.update_data()
+        return all(ud, lambda x: x == 255)
