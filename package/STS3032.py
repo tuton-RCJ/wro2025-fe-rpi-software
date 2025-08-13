@@ -78,24 +78,28 @@ class sts3032:
         time.sleep(degree/speed + 0.01) # Adjust sleep time to ensure the command is processed
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
     
-    def turn_left(self, angle=65):
+    def turn_left(self,speed=-1,angle=65):
+        if speed == -1:
+            speed = self.default_speed
         angle = min(angle, self.max_deg)
         target_degree = self.center_degree + int(angle/360 * 4096)
-        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, self.default_speed * 75, 0)
+        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
         time.sleep(0.1)
-        self.packetHandler.WriteSpec(self.back_servo_id, self.default_speed * 75, 0)
+        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
         time.sleep(1)
         self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
         time.sleep(0.1)
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
         time.sleep(0.1)
 
-    def turn_right(self, angle=65):
-        angle = min(angle, self.max_deg) 
+    def turn_right(self, speed=-1, angle=65):
+        if speed == -1:
+            speed = self.default_speed
+        angle = min(angle, self.max_deg)
         target_degree = self.center_degree - int(angle/360 * 4096)
-        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, self.default_speed * 75, 0)
+        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
         time.sleep(0.1)
-        self.packetHandler.WriteSpec(self.back_servo_id, self.default_speed * 75, 0)
+        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
         time.sleep(1)
         self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
         time.sleep(0.1)
