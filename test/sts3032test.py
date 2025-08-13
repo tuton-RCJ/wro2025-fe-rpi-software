@@ -13,7 +13,7 @@ import time
 sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
 from STS3032 import sts3032
 sts = sts3032()
-sts.drive(50, 30)  
+sts.drive(80, 0)  
 time.sleep(2)
 sts.stop() 
 sts.close_port() 
