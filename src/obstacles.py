@@ -89,23 +89,23 @@ def turn_corner():
 def escape_from_parking():
     decide_clockwise()
     if direct == 1:
-        sts.turn_right(speed=-75, angle=65)
+        sts.turn_right()
         time.sleep(0.1)
-        sts.turn_left(speed=-75, angle=65)
+        sts.turn_left()
     else:
-        sts.turn_left(speed=-75, angle=65)
+        sts.turn_left()
         time.sleep(0.1)
-        sts.turn_right(speed=-75, angle=65)
+        sts.turn_right()
 
 def enter_to_parking():
     if direct == 1:
-        sts.turn_left(speed=-75, angle=65)
+        sts.turn_left()
         time.sleep(0.1)
-        sts.turn_right(speed=-75, angle=65)
+        sts.turn_right()
     else:
-        sts.turn_right(speed=-75, angle=65)
+        sts.turn_right()
         time.sleep(0.1)
-        sts.turn_left(speed=-75, angle=65)
+        sts.turn_left()
 
 class PID_towall:
     def __init__(self, target_lane=1):
