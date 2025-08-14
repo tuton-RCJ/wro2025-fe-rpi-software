@@ -17,14 +17,20 @@ target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
 
 
-def get_dist(angle):  # this function is expected to use after executing lidar.update()
+def get_dist(angle): # this function is expected to use after executing lidar.update()
     rad_a = np.deg2rad(angle)
+    # print(rad_a)
+    rad_a %= np.pi * 2
+    # print(rad_a)
     min_abs = float('inf')
     min_dist = -1
-    for d in lidar.points:
-        if abs(d[0] - rad_a) < min_abs:
+    min_index = -1
+    for i,d in enumerate(lidar.points):
+        if abs(d[0]%(np.pi*2) - rad_a) < min_abs:
             min_dist = d[1]
             min_abs = abs(d[0] - rad_a)
+            min_index = i
+    print(i, lidar.points[i])
     return min_dist
 
 
