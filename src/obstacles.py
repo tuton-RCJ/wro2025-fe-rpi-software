@@ -5,6 +5,7 @@ sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
 from UnitV import UnitV
 from STS3032 import sts3032
 from LiDAR import lidar_
+import random
 
 sts = sts3032()
 uv = UnitV()
@@ -16,9 +17,9 @@ direct = 1 # 1 if clockwise else -1
 turn_cnt = 0
 target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
-cut_line = [0.75,1.25,1.75,2.25]
+cut_line = [0.75,1.25,1.75,2.55]
 
-objects = [[0 for j in range(3)] for i in range(4)] #  2: red (or there are no obstacles) , 0: green 
+objects = [[-1 for j in range(3)] for i in range(4)] #  -1: there are no obstacles, 2: red , 0: green 
 
 def get_index(x):
     if cut_line[0] < x < cut_line[0] + 0.2:
@@ -43,9 +44,7 @@ def get_index_strict(x):
         return 3
 def get_dist(angle): # this function is expected to use after executing lidar.update()
     rad_a = np.deg2rad(angle)
-    print(rad_a)
     rad_a %= np.pi * 2
-    print(rad_a)
     min_abs = float('inf')
     min_dist = -1
     min_index = -1
@@ -54,7 +53,6 @@ def get_dist(angle): # this function is expected to use after executing lidar.up
             min_dist = d[1]
             min_abs = abs(d[0] - rad_a)
             min_index = i
-    print(i, lidar.points[i])
     return min_dist
 
 def polartoXY(angle,dist):
@@ -63,7 +61,7 @@ def polartoXY(angle,dist):
     return x, y
 
 def get_abs_dist():
-    return 3-get_dist(0)
+    return max(3-get_dist(0), get_dist(180))
 
 def get_obj_angle(x): #this function returns the angle as degree(float)
     l = x-image_width/2
@@ -80,10 +78,52 @@ def get_minpoint(low,high):
 
 def get_obj_dist(x):
     angle = get_obj_angle(x)
-    return get_minpoint(x-10,x+10)
+    return get_minpoint(x-10,x+10) * np.cos(angle)
+
+def get_wall_line_distance(target_angle, angle_range=15):
+    
+    target_rad = np.deg2rad(target_angle)
+    range_rad = np.deg2rad(angle_range)
+
+    nearby_points = []
+    for point in lidar.points:
+        angle_diff = abs((point[0] % (2 * np.pi)) - (target_rad % (2 * np.pi)))
+        angle_diff = min(angle_diff, 2 * np.pi - angle_diff) 
+        
+        if angle_diff <= range_rad:
+            x = point[1] * np.cos(point[0])
+            y = point[1] * np.sin(point[0])
+            nearby_points.append((x, y))
+    
+    if len(nearby_points) < 2:
+        return get_dist(target_angle)
+    
+    nearby_points = np.array(nearby_points)
+    x_coords = nearby_points[:, 0]
+    y_coords = nearby_points[:, 1]
+    
+    if abs(target_angle) > 45 and abs(target_angle) < 135:
+        if len(set(y_coords)) > 1: 
+            A = np.vstack([y_coords, np.ones(len(y_coords))]).T
+            a, b = np.linalg.lstsq(A, x_coords, rcond=None)[0]
+            distance = abs(b) / np.sqrt(a**2 + 1)
+        else:
+            distance = abs(np.mean(x_coords))
+    else:
+        if len(set(x_coords)) > 1:  
+            A = np.vstack([x_coords, np.ones(len(x_coords))]).T
+            a, b = np.linalg.lstsq(A, y_coords, rcond=None)[0]
+            
+            distance = abs(b) / np.sqrt(a**2 + 1)
+        else:
+            distance = abs(np.mean(y_coords))
+    
+    return distance
 
 def get_side_dist(): # first is left, second is right
-    return [get_dist(90), get_dist(-90)]
+    left_dist = get_wall_line_distance(90)   
+    right_dist = get_wall_line_distance(-90) 
+    return [left_dist, right_dist]
 
 def decide_clockwise():
     global direct
@@ -97,7 +137,6 @@ def forward_to_specified_dist(dist):
     sts.stop()
 
 def turn_corner():
-    forward_to_specified_dist(0.6)
     if direct == 1:
         sts.turn_right()
     else:
@@ -107,11 +146,13 @@ def escape_from_parking():
     decide_clockwise()
     if direct == 1:
         sts.turn_right()
-        time.sleep(0.1)
+        sts.drive()
+        time.sleep(0.5)
         sts.turn_left()
     else:
         sts.turn_left()
-        time.sleep(0.1)
+        sts.drive()
+        time.sleep(0.5)
         sts.turn_right()
 
 def enter_to_parking():
@@ -124,85 +165,164 @@ def enter_to_parking():
         time.sleep(0.1)
         sts.turn_left()
 
-class PID_towall:
-    def __init__(self, target_lane=1):
-        self._kp = 5
+def estimate_wall_angle(is_left=True):  # return wall angle (°) [0~360)
+    lidar_data = []
+    calc_range = 20  # range of angles to consider(half)
+    
+    if is_left:
+        # Left wall (90° ± calc_range)
+        for i in range(90, 90 + calc_range + 1, 10):
+            lidar_data.append((i - 90, get_dist(i)))
+        for i in range(90 - calc_range, 90, 10):
+            lidar_data.append((i + 270, get_dist(i)))
+    else:
+        # Right wall (270° ± calc_range)
+        for i in range(270, 270 + calc_range + 1, 10):
+            angle_normalized = (i - 270) if i < 360 else (i - 270 - 360)
+            lidar_data.append((angle_normalized, get_dist(i % 360)))
+        for i in range(270 - calc_range, 270, 10):
+            angle_normalized = (i - 270) if i >= 0 else (i + 90)
+            lidar_data.append((angle_normalized, get_dist(i % 360)))
+
+    data = np.array(lidar_data, dtype=float)
+    angles = np.deg2rad(data[:, 0])
+    dist = data[:, 1]
+
+    # convert to cartesian coordinates
+    x = dist * np.cos(angles)
+    y = dist * np.sin(angles)
+
+    x, y = y, x  # swap x and y to avoid m goes inf
+
+    # Least squares y = m*x + c
+    A = np.vstack([x, np.ones(len(x))]).T
+    m, _ = np.linalg.lstsq(A, y, rcond=None)[0]
+
+    # calc wall angle
+    line_angle = np.rad2deg(np.arctan(m))
+    wall_angle = -line_angle if is_left else line_angle  # adjust sign based on wall side
+    return wall_angle
+
+
+
+class PID:
+    def __init__(self, target=0, target_lane=1):
+        self._kp = 2
         self._ki = 0
-        self._kd = 0.5
-        self._k = 4
+        self._kd = 0.1
+        self._k = 1
         self._old_error = 0
         self._integral = 0
-        self._target_distance = target_dist[target_lane]
-        self._target_lane = target_lane
         self._Imax = 100
+        self._target = target
+        self._target_lane = target_lane
 
-    def update(self):
-        current_distance = get_dist(90 if direct == -1 else -90)
-
-        error = self._target_distance - current_distance
-        
+    def update(self,current):
+        error = self._target - current
         p = self._kp * error
         self._integral += error
         i = self._ki * self._integral
         i = min(max(i, -self._Imax), self._Imax)
-        d = self._kd * (error - self._old_error) 
-        print(p,i,d)
+        d = self._kd * (error - self._old_error)
         pid = p + i + d
         self._old_error = error
-        sts.drive(degree=-pid*self._k)
-    
+        sts.drive(speed=80, degree=pid*self._k)
+
     def reset(self):
         self._old_error = 0
         self._integral = 0
     
     def switch_lane(self, target_lane):
-        self._target_distance = target_dist[target_lane]
-        self.reset()
-    
-if __name__ == "__main__":
-    escape_from_parking()
-    pid = PID_towall()
-    now_index = 0
-    turn_cnt = 0
-    while turn_cnt < 4:
-        lidar.update()
-        red, green = uv.update_data()
-        pid.update()
-        x = get_abs_dist()
-        red_dist = get_obj_dist(red) if red != 255 else float('inf')
-        green_dist = get_obj_dist(green) if green != 255 else float('inf')
-        red_dist += x
-        green_dist += x
-        if red_dist != float('inf'):
-            if get_index(red_dist) != -1:
-                objects[turn_cnt%4][get_index(red_dist)] = 2
-        if green_dist != float('inf'):
-            if get_index(green_dist) != -1:
-                objects[turn_cnt%4][get_index(green_dist)] = 0
-        now_index = get_index_strict(x)
-        if now_index == 3:
-            turn_corner()
-            now_index = 0
-            turn_cnt += 1
-        else:
-            if pid._target_lane != objects[turn_cnt%4][now_index]:
-                pid.switch_lane(objects[turn_cnt%4][now_index])
-    while turn_cnt < 12:  
-        lidar.update()
-        pid.update()      
-        x = get_abs_dist()
-        now_index = get_index_strict(x)
-        if now_index == 3:
-            turn_corner()
-            turn_cnt += 1
-        else:
-            if pid._target_lane != objects[turn_cnt%4][now_index]:
-                pid.switch_lane(objects[turn_cnt%4][now_index])
+        if self._target_lane != target_lane:
+            self._target_lane = target_lane
+            self.reset()
 
-    while get_dist(180) < 1.2:
+pid = PID()
+
+def drive_straight(il):
+    pid.update(estimate_wall_angle(is_left=il))
+
+def switch_lane(target_lane):
+    old_lane = pid._target_lane
+    if old_lane == target_lane:
+        return
+    if old_lane == 1:
+        if target_lane == 0:
+            sts.turn_right()
+            sts.turn_left()
+        elif target_lane == 2:
+            sts.turn_left()
+            sts.turn_right()
+    elif old_lane == 2:
+        sts3032.turn_right()
+        sts3032.drive()
+        time.sleep(1)
+        sts3032.turn_left()
+    elif old_lane == 0:
+        sts3032.turn_left()
+        sts3032.drive()
+        time.sleep(1)
+        sts3032.turn_right()        
+    sts.drive()
+    time.sleep(1)
+    pid._target_lane = target_lane
+
+
+if __name__ == "__main__":
+    try:
         lidar.update()
-        red, green = uv.update_data()
-        pid.update()
-        pid.switch_lane(2)
-    sts.stop()
-    enter_to_parking()
+        escape_from_parking()
+        now_index = 0
+        turn_cnt = 0
+        while turn_cnt < 5:
+            lidar.update()
+            drive_straight(True)
+            red, green = uv.update_data()
+            x = get_abs_dist()
+            red_dist = get_obj_dist(red) if red != 255 else float('inf')
+            green_dist = get_obj_dist(green) if green != 255 else float('inf')
+            red_dist += x
+            green_dist += x
+            if red_dist != float('inf'):
+                if get_index(red_dist) != -1:
+                    objects[turn_cnt%4][get_index(red_dist)] = 2
+            if green_dist != float('inf'):
+                if get_index(green_dist) != -1:
+                    objects[turn_cnt%4][get_index(green_dist)] = 0
+            now_index = get_index_strict(x)
+            if now_index == 3 and get_dist(90*(-direct)):
+                turn_corner()
+                now_index = 0
+                turn_cnt += 1
+                pid._target_lane = 1
+            if pid._target_lane != objects[turn_cnt%4][now_index] and objects[turn_cnt%4][now_index] != -1:
+                switch_lane(objects[turn_cnt%4][now_index])
+            print(f"debug: red:{red_dist}, green:{green_dist} now_index:{now_index}, target_lane:{pid._target_lane}, object:{objects[turn_cnt%4]}")
+            print(f"debug: dist:{[get_dist(0), get_dist(90), get_dist(180), get_dist(270)]}, turn_cnt: {turn_cnt}")
+        """
+            while turn_cnt < 12:  
+                lidar.update()
+                pid.update()      
+                x = get_abs_dist()
+                now_index = get_index_strict(x)
+                if now_index == 3:
+                    turn_corner()
+                    turn_cnt += 1
+                    now_index = 1
+                    pid._target_lane = 1
+                else:
+                    if pid._target_lane != objects[turn_cnt%4][now_index]:
+                        switch_lane(objects[turn_cnt%4][now_index])
+
+            while get_dist(180) < 1.2:
+                lidar.update()
+                red, green = uv.update_data()
+                pid.update()
+                pid.switch_lane(2)
+            sts.stop()
+            enter_to_parking()
+        """
+    except KeyboardInterrupt:
+        sts.stop()
+    finally:
+        pass

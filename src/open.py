@@ -115,8 +115,8 @@ def estimate_left_wall_angle():  # return wall angle (°) [0~360)
 def turn_corner():
     curve_angle = estimate_wall_angle()*direct
     # forward_to_specified_dist(0.6)
-    sts.drive(speed=30, degree=65*direct)
-    time.sleep(2.8*((90+curve_angle)/90))  # need to adjust
+    sts.drive(speed=90, degree=65*direct)
+    time.sleep(1*((90+curve_angle)/90))  # need to adjust
     sts.stop()
 
 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         # turn_corner()
         # time.sleep(1)
         turn_cnt = 0
-        while turn_cnt < 8:
+        while turn_cnt < 12:
             lidar.update()
             drive_straight()
             if get_dist(0) < 0.5:

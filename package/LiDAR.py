@@ -2,7 +2,7 @@ import ydlidar
 import numpy as np
 
 class lidar_: # いい命名が思いつかないのでとりあえず衝突を防ぐためこれで
-    def __init__(self,port="/dev/ttyUSB0", baudrate=230400, lidar_type=ydlidar.TYPE_TRIANGLE, device_type=ydlidar.YDLIDAR_TYPE_SERIAL, scan_frequency=10.0, sample_rate=4, single_channel=False, max_angle=180.0, min_angle=-180.0, max_range=16.0, min_range=0.02, intensity=True):
+    def __init__(self,port="/dev/ttyAMA4", baudrate=230400, lidar_type=ydlidar.TYPE_TRIANGLE, device_type=ydlidar.YDLIDAR_TYPE_SERIAL, scan_frequency=10.0, sample_rate=4, single_channel=False, max_angle=180.0, min_angle=-180.0, max_range=16.0, min_range=0.02, intensity=True):
         self.lidar = ydlidar.CYdLidar()
         self.lidar.setlidaropt(ydlidar.LidarPropSerialPort, port)
         self.lidar.setlidaropt(ydlidar.LidarPropSerialBaudrate, baudrate)

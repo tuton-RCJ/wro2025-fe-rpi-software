@@ -77,7 +77,7 @@ class sts3032:
         print(degree, speed, degree/speed)
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
     
-    def turn_left(self,speed=-1,angle=65):
+    def turn_left(self,speed=30,angle=65):
         if speed == -1:
             speed = self.default_speed
         angle = min(angle, self.max_deg)
@@ -85,13 +85,13 @@ class sts3032:
         self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
         time.sleep(0.1)
         self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(1)
+        time.sleep(2.8)
         self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
         time.sleep(0.1)
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
         time.sleep(0.1)
 
-    def turn_right(self, speed=-1, angle=65):
+    def turn_right(self, speed=30, angle=65):
         if speed == -1:
             speed = self.default_speed
         angle = min(angle, self.max_deg)
@@ -99,7 +99,7 @@ class sts3032:
         self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
         time.sleep(0.1)
         self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(1)
+        time.sleep(2.8)
         self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
         time.sleep(0.1)
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
