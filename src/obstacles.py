@@ -18,7 +18,7 @@ target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
 cut_line = [0.75,1.25,1.75,2.25]
 
-objects = [[-1 for j in range(2)] for i in range(4)] # -1: not yet explored, 0: There are NO OBSTACLES 1: red, 2: green 
+objects = [[-1 for j in range(2)] for i in range(4)] #  1: There are NO OBSTACLES 2: red, 0: green 
 
 
 def get_index(x):
