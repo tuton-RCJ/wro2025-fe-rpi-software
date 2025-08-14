@@ -72,7 +72,8 @@ def get_side_dist(): # first is left, second is right
     return [get_dist(90), get_dist(-90)]
 
 def decide_clockwise():
-    return 1 if get_side_dist()[0] > get_side_dist()[1] else -1
+    direct = 1 if get_side_dist()[0] > get_side_dist()[1] else -1
+    return direct
 
 def forward_to_specified_dist(dist):
     while get_dist(0) > dist:
