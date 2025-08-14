@@ -15,7 +15,7 @@ class lidar_: # いい命名が思いつかないのでとりあえず衝突を�
         self.lidar.setlidaropt(ydlidar.LidarPropMinAngle, min_angle)
         self.lidar.setlidaropt(ydlidar.LidarPropMaxRange, max_range)
         self.lidar.setlidaropt(ydlidar.LidarPropMinRange, min_range)
-        self.lidar.setlidaropt(ydlidar.LidarPropIntensity, intensity)
+        self.lidar.setlidaropt(ydlidar.LidarPropIntenstiy, intensity)
         self.lidar.initialize()
         self.points = None
 
