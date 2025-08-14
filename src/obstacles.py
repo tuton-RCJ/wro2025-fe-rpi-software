@@ -166,7 +166,7 @@ if __name__ == "__main__":
         else:
             pid.switch_lane(objects[turn_cnt][now_index])
     while turn_cnt < 12:        
-        now_index = get_index_strict(x):
+        now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
         else:
