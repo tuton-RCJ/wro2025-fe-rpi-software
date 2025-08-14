@@ -147,7 +147,6 @@ if __name__ == "__main__":
     escape_from_parking()
     pid = PID_towall()
     now_index = 0
-    now_color = -1
     turn_cnt = 0
     while turn_cnt < 4:
         lidar.update()
@@ -160,18 +159,18 @@ if __name__ == "__main__":
         green_dist += x
         if red_dist != float('inf'):
             if get_index(red_dist) != -1:
-                objects[turn_cnt][get_index(red_dist)] = 2
+                objects[turn_cnt%4][get_index(red_dist)] = 2
         if green_dist != float('inf'):
             if get_index(green_dist) != -1:
-                objects[turn_cnt][get_index(green_dist)] = 0
+                objects[turn_cnt%4][get_index(green_dist)] = 0
         now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
             now_index = 0
             turn_cnt += 1
         else:
-            if pid._target_lane != objects[turn_cnt][now_index]:
-                pid.switch_lane(objects[turn_cnt][now_index])
+            if pid._target_lane != objects[turn_cnt%4][now_index]:
+                pid.switch_lane(objects[turn_cnt%4][now_index])
     while turn_cnt < 12:  
         lidar.update()
         pid.update()      
