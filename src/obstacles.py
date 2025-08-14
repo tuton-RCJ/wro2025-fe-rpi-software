@@ -1,5 +1,5 @@
 import sys
-from time import time
+import time
 import numpy as np
 sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
 from UnitV import UnitV
@@ -117,7 +117,9 @@ class PID_towall:
         self._old_error = 0
         self._integral = 0
         self._target_distance = target_dist[target_lane]
-    
+        self._target_lane = target_lane
+        self._Imax = 100
+
     def update(self):
         current_distance = get_dist(direct*(90 if direct == 0 else -90))
 
@@ -126,6 +128,7 @@ class PID_towall:
         p = self._kp * error
         self._integral += error
         i = self._ki * self._integral
+        i = min(max(i, -self._Imax), self._Imax)
         d = self._kd * (error - self._old_error) 
         pid = p + i + d
         self._old_error = error
@@ -164,14 +167,20 @@ if __name__ == "__main__":
         now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
+            turn_cnt += 1
         else:
-            pid.switch_lane(objects[turn_cnt][now_index])
-    while turn_cnt < 12:        
+            if pid._target_lane != objects[turn_cnt][now_index]:
+                pid.switch_lane(objects[turn_cnt][now_index])
+    while turn_cnt < 12:  
+        lidar.update()
+        pid.update()      
         now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
+            turn_cnt += 1
         else:
-            pid.switch_lane(objects[turn_cnt][now_index])
+            if pid._target_lane != objects[turn_cnt][now_index]:
+                pid.switch_lane(objects[turn_cnt][now_index])
 
     while get_dist(180) < 1.2:
         lidar.update()
