@@ -75,7 +75,6 @@ class sts3032:
         degree = int(degree/360 * 4096 + self.center_degree)
         self.packetHandler.WritePosEx(self.front_servo_id, degree, speed, 0)
         print(degree, speed, degree/speed)
-        time.sleep(degree/speed + 0.01) # Adjust sleep time to ensure the command is processed
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
     
     def turn_left(self,speed=-1,angle=65):
