@@ -14,11 +14,34 @@ image_width = 160
 fov = 60 # degrees
 direct = 0 # 1 if clockwise else -1
 turn_cnt = 0
-target_dist = [20, 50, 20]
+target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
+cut_line = [0.75,1.25,1.75,2.25]
 
 objects = [[-1 for j in range(2)] for i in range(4)] # -1: not yet explored, 0: There are NO OBSTACLES 1: red, 2: green 
 
+
+def get_index(x):
+    if cut_line[0] < x < cut_line[0] + 0.2:
+        return 0
+    elif cut_line[1] < x < cut_line[1] + 0.2:
+
+        return 1
+    elif cut_line[2] < x < cut_line[2] + 0.2:
+        return 2
+    else:
+        return -1
+    
+def get_index_strict(x):
+    x -= 0.25
+    if cut_line[0] < x <= cut_line[1]:
+        return 0
+    if cut_line[1] < x <= cut_line[2]:
+        return 1
+    if cut_line[2] < x <= cut_line[3]:
+        return 2
+    if cut_line[3] < x:
+        return 3
 def get_dist(angle): # this function is expected to use after executing lidar.update()
     rad_a = np.deg2rad(angle)
     min_abs = float('inf')
@@ -33,6 +56,9 @@ def polartoXY(angle,dist):
     x = dist * np.cos(angle)
     y = dist * np.sin(angle)
     return x, y
+
+def get_abs_dist():
+    return 3-get_dist(0)
 
 def get_obj_angle(x): #this function returns the angle as degree(float)
     l = image_width/2 - x
@@ -118,36 +144,34 @@ if __name__ == "__main__":
     now_index = 0
     now_color = -1
     turn_cnt = 0
-    while turn_cnt < 12:
+    while turn_cnt < 4:
         lidar.update()
         red, green = uv.update_data()
         pid.update()
+        x = get_abs_dist()
         if not uv.is_empty():
             red_dist = get_obj_dist(red) if red != 255 else float('inf')
             green_dist = get_obj_dist(green) if green != 255 else float('inf')
-            if red_dist < green_dist:
-                if now_color != 1:
-                    now_index = 1
-                objects[turn_cnt%4][now_index] = 1
-                now_color = 1
-                pid.switch_lane(2)
-            else:
-                if now_color != 2:
-                    now_index = 1
-                objects[turn_cnt%4][now_index] = 2
-                now_color = 2
-                pid.switch_lane(0)
+            red_dist += x
+            green_dist += x
+            if red_dist != float('inf'):
+                if get_index(red_dist) != -1:
+                    objects[turn_cnt][get_index(red_dist)] = 2
+            if green_dist != float('inf'):
+                if get_index(green_dist) != -1:
+                    objects[turn_cnt][get_index(green_dist)] = 0
+        now_index = get_index_strict(x):
+        if now_index == 3:
+            turn_corner()
         else:
-            now_color = 0
-            pid.switch_lane(1)
-        if get_dist(0) < thres_forward_dist and now_color == 0:
-            forward_to_specified_dist(thres_forward_dist)
-            if direct == 1:
-                sts.turn_right()
-            else:
-                sts.turn_left()
-            now_color = -1
-            now_index = 0
+            pid.switch_lane(objects[turn_cnt][now_index])
+    while turn_cnt < 12:        
+        now_index = get_index_strict(x):
+        if now_index == 3:
+            turn_corner()
+        else:
+            pid.switch_lane(objects[turn_cnt][now_index])
+
     while get_dist(180) < 1.2:
         lidar.update()
         red, green = uv.update_data()
