@@ -18,8 +18,7 @@ target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
 cut_line = [0.75,1.25,1.75,2.25]
 
-objects = [[-1 for j in range(2)] for i in range(4)] #  1: There are NO OBSTACLES 2: red, 0: green 
-
+objects = [[0 for j in range(3)] for i in range(4)] #  2: red (or there are no obstacles) , 0: green 
 
 def get_index(x):
     if cut_line[0] < x < cut_line[0] + 0.2:
@@ -154,17 +153,16 @@ if __name__ == "__main__":
         red, green = uv.update_data()
         pid.update()
         x = get_abs_dist()
-        if not uv.is_empty():
-            red_dist = get_obj_dist(red) if red != 255 else float('inf')
-            green_dist = get_obj_dist(green) if green != 255 else float('inf')
-            red_dist += x
-            green_dist += x
-            if red_dist != float('inf'):
-                if get_index(red_dist) != -1:
-                    objects[turn_cnt][get_index(red_dist)] = 2
-            if green_dist != float('inf'):
-                if get_index(green_dist) != -1:
-                    objects[turn_cnt][get_index(green_dist)] = 0
+        red_dist = get_obj_dist(red) if red != 255 else float('inf')
+        green_dist = get_obj_dist(green) if green != 255 else float('inf')
+        red_dist += x
+        green_dist += x
+        if red_dist != float('inf'):
+            if get_index(red_dist) != -1:
+                objects[turn_cnt][get_index(red_dist)] = 2
+        if green_dist != float('inf'):
+            if get_index(green_dist) != -1:
+                objects[turn_cnt][get_index(green_dist)] = 0
         now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
