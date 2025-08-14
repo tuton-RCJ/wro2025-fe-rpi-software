@@ -32,8 +32,8 @@ def get_index(x):
         return -1
     
 def get_index_strict(x):
-    x -= 0.25
-    if cut_line[0] < x <= cut_line[1]:
+    x += 0.25
+    if x <= cut_line[1]:
         return 0
     if cut_line[1] < x <= cut_line[2]:
         return 1
@@ -71,6 +71,7 @@ def get_side_dist(): # first is left, second is right
     return [get_dist(90), get_dist(-90)]
 
 def decide_clockwise():
+    global direct
     direct = 1 if get_side_dist()[0] > get_side_dist()[1] else -1
     return direct
 
@@ -121,7 +122,7 @@ class PID_towall:
         self._Imax = 100
 
     def update(self):
-        current_distance = get_dist(direct*(90 if direct == -1 else -90))
+        current_distance = get_dist(90 if direct == -1 else -90)
 
         error = self._target_distance - current_distance
         
@@ -166,6 +167,7 @@ if __name__ == "__main__":
         now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
+            now_index = 0
             turn_cnt += 1
         else:
             if pid._target_lane != objects[turn_cnt][now_index]:
@@ -179,8 +181,8 @@ if __name__ == "__main__":
             turn_corner()
             turn_cnt += 1
         else:
-            if pid._target_lane != objects[turn_cnt][now_index]:
-                pid.switch_lane(objects[turn_cnt][now_index])
+            if pid._target_lane != objects[turn_cnt%4][now_index]:
+                pid.switch_lane(objects[turn_cnt%4][now_index])
 
     while get_dist(180) < 1.2:
         lidar.update()
