@@ -122,7 +122,7 @@ class PID_towall:
         self._Imax = 100
 
     def update(self):
-        current_distance = get_dist(direct*(90 if direct == 0 else -90))
+        current_distance = get_dist(direct*(90 if direct == -1 else -90))
 
         error = self._target_distance - current_distance
         
@@ -175,6 +175,7 @@ if __name__ == "__main__":
     while turn_cnt < 12:  
         lidar.update()
         pid.update()      
+        x = get_abs_dist()
         now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
