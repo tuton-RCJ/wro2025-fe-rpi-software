@@ -76,6 +76,7 @@ def decide_clockwise():
     return direct
 
 def forward_to_specified_dist(dist):
+    sts.drive()
     while get_dist(0) > dist:
         lidar.update()
     sts.stop()
