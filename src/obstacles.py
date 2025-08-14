@@ -12,7 +12,7 @@ lidar = lidar_()
 lidar.turn_on()
 image_width = 160
 fov = 60 # degrees
-direct = 0 # 1 if clockwise else -1
+direct = 1 # 1 if clockwise else -1
 turn_cnt = 0
 target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
@@ -43,12 +43,18 @@ def get_index_strict(x):
         return 3
 def get_dist(angle): # this function is expected to use after executing lidar.update()
     rad_a = np.deg2rad(angle)
+    print(rad_a)
+    rad_a %= np.pi * 2
+    print(rad_a)
     min_abs = float('inf')
     min_dist = -1
-    for d in lidar.points:
-        if abs(d[0] - rad_a) < min_abs:
+    min_index = -1
+    for i,d in enumerate(lidar.points):
+        if abs(d[0]%(np.pi*2) - rad_a) < min_abs:
             min_dist = d[1]
             min_abs = abs(d[0] - rad_a)
+            min_index = i
+    print(i, lidar.points[i])
     return min_dist
 
 def polartoXY(angle,dist):
@@ -60,12 +66,21 @@ def get_abs_dist():
     return 3-get_dist(0)
 
 def get_obj_angle(x): #this function returns the angle as degree(float)
-    l = image_width/2 - x
+    l = x-image_width/2
     return fov * l / image_width
+
+def get_minpoint(low,high):
+    low = np.deg2rad(low)
+    high = np.deg2rad(high)
+    min_dist = float('inf')
+    for i in range(len(lidar.points)):
+        if low < lidar.points[i][0] < high:
+            min_dist = min(min_dist, lidar.points[i][1])
+    return min_dist
 
 def get_obj_dist(x):
     angle = get_obj_angle(x)
-    return get_dist(angle)
+    return get_minpoint(x-10,x+10)
 
 def get_side_dist(): # first is left, second is right
     return [get_dist(90), get_dist(-90)]
@@ -111,10 +126,10 @@ def enter_to_parking():
 
 class PID_towall:
     def __init__(self, target_lane=1):
-        self._kp = 2
-        self._ki = 5
-        self._kd = 0.1
-        self._k = 1
+        self._kp = 5
+        self._ki = 0
+        self._kd = 0.5
+        self._k = 4
         self._old_error = 0
         self._integral = 0
         self._target_distance = target_dist[target_lane]
@@ -131,9 +146,10 @@ class PID_towall:
         i = self._ki * self._integral
         i = min(max(i, -self._Imax), self._Imax)
         d = self._kd * (error - self._old_error) 
+        print(p,i,d)
         pid = p + i + d
         self._old_error = error
-        sts.drive(degree=pid*self._k)
+        sts.drive(degree=-pid*self._k)
     
     def reset(self):
         self._old_error = 0
@@ -142,7 +158,7 @@ class PID_towall:
     def switch_lane(self, target_lane):
         self._target_distance = target_dist[target_lane]
         self.reset()
-
+    
 if __name__ == "__main__":
     escape_from_parking()
     pid = PID_towall()
