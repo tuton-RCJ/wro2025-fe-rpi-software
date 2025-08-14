@@ -1,7 +1,7 @@
 import serial
 
 class UnitV:
-    def __init__(self,port="/dev/ttyUSB1"):
+    def __init__(self,port="/dev/ttyAMA2"):
         self.ser = serial.Serial(port, 115200, timeout=1)
         self.ser.flush()
         self.greens = 0
