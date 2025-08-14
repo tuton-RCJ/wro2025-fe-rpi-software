@@ -160,7 +160,7 @@ if __name__ == "__main__":
             if green_dist != float('inf'):
                 if get_index(green_dist) != -1:
                     objects[turn_cnt][get_index(green_dist)] = 0
-        now_index = get_index_strict(x):
+        now_index = get_index_strict(x)
         if now_index == 3:
             turn_corner()
         else:
