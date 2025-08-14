@@ -50,8 +50,6 @@ if ret:
             plt.clf()
             ax = plt.subplot(111)
             ax.scatter(pt[:, 0], pt[:, 1], c=intensities, cmap='hsv', alpha=0.75)
-            ax.set_xlim([-0.5,0.5])
-            ax.set_ylim([-0.5,0.5])
             plt.savefig("lidar_scan.png")
             time.sleep(0.05);
     except KeyboardInterrupt:
