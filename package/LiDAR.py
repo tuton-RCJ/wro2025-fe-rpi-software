@@ -30,6 +30,8 @@ class lidar_: # いい命名が思いつかないのでとりあえず衝突を�
     def turn_on(self):
         if self._is_ld06:
             self.lidar_data, self.stop = listen_to_lidar(self.port)
+            import time
+            time.sleep(1)
         else:
             self.lidar.turnOn()
     
@@ -53,9 +55,9 @@ class lidar_: # いい命名が思いつかないのでとりあえず衝突を�
     def update(self):
         if self._is_ld06:
             pts = self.lidar_data['last_packet_data']
-            angles = np.array([np.deg2rad(p) for p in pts["angle_i"]], dtype=np.float32)
-            ranges = np.array([p for p in pts["distance_i"]], dtype=np.float32)
-            intensities = np.array([p for p in pts["confidence_i"]], dtype=np.float32)
+            angles = np.array([np.deg2rad(p) for p in pts.angle_i], dtype=np.float32)
+            ranges = np.array([p for p in pts.distance_i], dtype=np.float32)
+            intensities = np.array([p for p in pts.confidence_i], dtype=np.float32)
             self.points = np.stack((angles, ranges, intensities), axis=1)
         else:
             pts = self.scan()

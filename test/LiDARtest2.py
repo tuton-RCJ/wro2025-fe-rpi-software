@@ -24,6 +24,9 @@ try:
         pt = np.array(pt)
         plt.clf()
         ax = plt.subplot(111)
+        ax.set_xlim(-100, 100)
+        ax.set_ylim(-100, 100)
+
         ax.scatter(pt[:, 0], pt[:, 1], c=intensities, cmap='hsv', alpha=0.75)
         plt.savefig("lidar_scan.png")
         time.sleep(0.15)
