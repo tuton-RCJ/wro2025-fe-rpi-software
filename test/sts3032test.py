@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-#
-# *********     Gen Write Example      *********
-#
-#
-# Available SCServo model on this example : All models using Protocol SCS
-# This example is tested with a SCServo(STS/SMS), and an URT
-#
 
 import sys
 import os
@@ -13,7 +5,14 @@ import time
 sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
 from STS3032 import sts3032
 sts = sts3032()
-sts.drive(80, 0)  
-time.sleep(2)
-sts.stop() 
-sts.close_port() 
+try:
+    while True:
+        s, d, t = map(int, input("Enter speed and degree: ").split())
+        sts.drive(s, d)
+        time.sleep(t)
+        sts.stop()
+        
+except KeyboardInterrupt:
+    sts.stop()
+finally:
+    sts.close_port()

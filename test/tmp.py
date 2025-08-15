@@ -11,7 +11,10 @@ import math
 
 ydlidar.os_init();
 ports = ydlidar.lidarPortList();
-port = "/dev/ttyAMA4"
+port = "/dev/ttyAMA4";
+for key, value in ports.items():
+    port = value;
+    print(port);
 laser = ydlidar.CYdLidar();
 laser.setlidaropt(ydlidar.LidarPropSerialPort, port);
 laser.setlidaropt(ydlidar.LidarPropSerialBaudrate, 230400);

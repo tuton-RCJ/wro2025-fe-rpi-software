@@ -53,6 +53,7 @@ def get_dist(angle): # this function is expected to use after executing lidar.up
             min_dist = d[1]
             min_abs = abs(d[0] - rad_a)
             min_index = i
+    
     return min_dist
 
 def polartoXY(angle,dist):
@@ -61,7 +62,7 @@ def polartoXY(angle,dist):
     return x, y
 
 def get_abs_dist():
-    return max(3-get_dist(0), get_dist(180))
+    return 3-get_dist(0) if get_dist(0) > 0.6 else -1
 
 def get_obj_angle(x): #this function returns the angle as degree(float)
     l = x-image_width/2
@@ -136,23 +137,17 @@ def forward_to_specified_dist(dist):
         lidar.update()
     sts.stop()
 
-def turn_corner():
-    if direct == 1:
-        sts.turn_right()
-    else:
-        sts.turn_left()
-
 def escape_from_parking():
     decide_clockwise()
     if direct == 1:
         sts.turn_right()
         sts.drive()
-        time.sleep(0.5)
+        time.sleep(0.7)
         sts.turn_left()
     else:
         sts.turn_left()
         sts.drive()
-        time.sleep(0.5)
+        time.sleep(0.7)
         sts.turn_right()
 
 def enter_to_parking():
@@ -203,7 +198,13 @@ def estimate_wall_angle(is_left=True):  # return wall angle (°) [0~360)
     wall_angle = -line_angle if is_left else line_angle  # adjust sign based on wall side
     return wall_angle
 
-
+def turn_corner():
+    curve_angle = estimate_wall_angle()*direct
+    # forward_to_specified_dist(0.6)
+    sts.drive(speed=90, degree=65*direct)
+    time.sleep(1.5*((90+curve_angle)/90))  # need to adjust
+    print(90+curve_angle)
+    sts.stop()
 
 class PID:
     def __init__(self, target=0, target_lane=1):
@@ -226,7 +227,7 @@ class PID:
         d = self._kd * (error - self._old_error)
         pid = p + i + d
         self._old_error = error
-        sts.drive(speed=80, degree=pid*self._k)
+        sts.drive(speed=50, degree=pid*self._k)
 
     def reset(self):
         self._old_error = 0
@@ -250,21 +251,22 @@ def switch_lane(target_lane):
         if target_lane == 0:
             sts.turn_right()
             sts.turn_left()
+            t
         elif target_lane == 2:
             sts.turn_left()
             sts.turn_right()
     elif old_lane == 2:
-        sts3032.turn_right()
-        sts3032.drive()
-        time.sleep(1)
-        sts3032.turn_left()
+        sts.turn_right()
+        sts.drive()
+        time.sleep(1.5)
+        sts.turn_left()
     elif old_lane == 0:
-        sts3032.turn_left()
-        sts3032.drive()
-        time.sleep(1)
-        sts3032.turn_right()        
+        sts.turn_left()
+        sts.drive()
+        time.sleep(1.5)
+        sts.turn_right()        
     sts.drive()
-    time.sleep(1)
+    time.sleep(1.5)
     pid._target_lane = target_lane
 
 
@@ -274,11 +276,14 @@ if __name__ == "__main__":
         escape_from_parking()
         now_index = 0
         turn_cnt = 0
+        x_old = 1.5
         while turn_cnt < 5:
             lidar.update()
             drive_straight(True)
             red, green = uv.update_data()
             x = get_abs_dist()
+            if x == -1:
+                x = x_old
             red_dist = get_obj_dist(red) if red != 255 else float('inf')
             green_dist = get_obj_dist(green) if green != 255 else float('inf')
             red_dist += x
@@ -290,7 +295,7 @@ if __name__ == "__main__":
                 if get_index(green_dist) != -1:
                     objects[turn_cnt%4][get_index(green_dist)] = 0
             now_index = get_index_strict(x)
-            if now_index == 3 and get_dist(90*(-direct)):
+            if (now_index == 3) and (get_dist(90*(-direct)) > 0):
                 turn_corner()
                 now_index = 0
                 turn_cnt += 1
@@ -299,6 +304,7 @@ if __name__ == "__main__":
                 switch_lane(objects[turn_cnt%4][now_index])
             print(f"debug: red:{red_dist}, green:{green_dist} now_index:{now_index}, target_lane:{pid._target_lane}, object:{objects[turn_cnt%4]}")
             print(f"debug: dist:{[get_dist(0), get_dist(90), get_dist(180), get_dist(270)]}, turn_cnt: {turn_cnt}")
+            x_old = x
         """
             while turn_cnt < 12:  
                 lidar.update()
