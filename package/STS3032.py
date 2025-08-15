@@ -1,7 +1,7 @@
 from scservo_sdk import *
 import time 
 class sts3032:
-    def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=2048, default_speed=50):
+    def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=0, default_speed=50):
         self.portHandler = PortHandler(port)
         self.packetHandler = sms_sts(self.portHandler)
         self.front_servo_id = front_servo_id
@@ -72,38 +72,11 @@ class sts3032:
         else:
             degree = max(-self.max_deg, min(degree, self.max_deg))
         speed *= 75
-        degree = int(degree/360 * 4096 + self.center_degree)
+        degree = int(degree/360 * 4096 + self.center_degree) 
+        degree %= 4096
         self.packetHandler.WritePosEx(self.front_servo_id, degree, speed, 0)
         print(degree, speed, degree/speed)
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
-    
-    def turn_left(self,speed=30,angle=65):
-        if speed == -1:
-            speed = self.default_speed
-        angle = min(angle, self.max_deg)
-        target_degree = self.center_degree + int(angle/360 * 4096)
-        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
-        time.sleep(0.1)
-        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(2.8)
-        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
-        time.sleep(0.1)
-        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
-        time.sleep(0.1)
-
-    def turn_right(self, speed=30, angle=65):
-        if speed == -1:
-            speed = self.default_speed
-        angle = min(angle, self.max_deg)
-        target_degree = self.center_degree - int(angle/360 * 4096)
-        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
-        time.sleep(0.1)
-        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(2.8)
-        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
-        time.sleep(0.1)
-        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
-        time.sleep(0.1)
 
 
     def close_port(self):
