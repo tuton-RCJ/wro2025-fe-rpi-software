@@ -49,15 +49,16 @@ def decide_clockwise():  # decide turn direction based on side distances
 
 # the robot will move forward untill the front distance achieve given dist
 def forward_to_specified_dist(dist: float):
-    sts.drive()
+    lidar.update()
     while get_dist(0) > dist:
         lidar.update()
+        drive_straight()
     sts.stop()
 
 
 def estimate_wall_angle():  # return wall angle (°) [0~360)
     lidar_data = []
-    calc_range = 30  # range of angles to consider(half)
+    calc_range = 10  # range of angles to consider(half)
     for i in range(0, calc_range+1,10):
         lidar_data.append((i, get_dist(i)))
     for i in range(3600-calc_range, 360,10):
@@ -116,7 +117,8 @@ def turn_corner():
     curve_angle = estimate_wall_angle()*direct
     # forward_to_specified_dist(0.6)
     sts.drive(speed=90, degree=65*direct)
-    time.sleep(1*((90+curve_angle)/90))  # need to adjust
+    time.sleep(1.5*((90+curve_angle)/90))  # need to adjust
+    print(90+curve_angle)
     sts.stop()
 
 
@@ -163,12 +165,13 @@ pid=PID()
 if __name__ == "__main__":
     
     try:
-
         sts.stop()
+
         # while True:
         #     lidar.update()
         #     print(estimate_wall_angle())
         #     time.sleep(0.1)
+        
         lidar.update()
         # decide_clockwise()
         # turn_corner()
@@ -177,12 +180,13 @@ if __name__ == "__main__":
         while turn_cnt < 12:
             lidar.update()
             drive_straight()
-            if get_dist(0) < 0.5:
+            if get_dist(0) < 0.6:
                 decide_clockwise()
                 turn_corner()
                 turn_cnt += 1
-
-        forward_to_specified_dist(0.6)
+        sts.stop()
+        time.sleep(0.2)
+        forward_to_specified_dist(1.5)
         lidar.turn_off()
         sts.stop()
     except KeyboardInterrupt:

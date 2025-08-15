@@ -27,13 +27,13 @@ class sts3032:
             
         scs_model_number, scs_comm_result, scs_error = self.packetHandler.ping(self.front_servo_id)
         if scs_comm_result != COMM_SUCCESS:
-            print("%s" % self.packetHandler.getTxRxResult(scs_comm_result))
+            print("%s" % self.packetHandler.getTxRxResult(scs_comm_result), scs_comm_result)
             flag = False
         else:
             print("[ID:%03d] ping to front servo Succeeded. SCServo model number : %d" % (self.front_servo_id, scs_model_number))
 
         if scs_error != 0:
-            print("%s" % self.packetHandler.getRxPacketError(scs_error))
+            print("%s" % self.packetHandler.getRxPacketError(scs_error), scs_comm_result)
         self.packetHandler.ServoMode(self.front_servo_id)
         print("Front servo is set to servo mode")
         self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, 0, 0)
@@ -77,6 +77,34 @@ class sts3032:
         self.packetHandler.WritePosEx(self.front_servo_id, degree, speed, 0)
         print(degree, speed, degree/speed)
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
+    
+    def turn_left(self,speed=90,angle=55):
+        if speed == -1:
+            speed = self.default_speed
+        angle = min(angle, self.max_deg)
+        target_degree = self.center_degree + int(angle/360 * 4096)
+        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
+        time.sleep(0.1)
+        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
+        time.sleep(1.7)
+        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
+        time.sleep(0.1)
+        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
+        time.sleep(0.1)
+
+    def turn_right(self, speed=90, angle=40):
+        if speed == -1:
+            speed = self.default_speed
+        angle = min(angle, self.max_deg)
+        target_degree = self.center_degree - int(angle/360 * 4096)
+        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
+        time.sleep(0.1)
+        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
+        time.sleep(1.7)
+        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
+        time.sleep(0.1)
+        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
+        time.sleep(0.1)
 
 
     def close_port(self):

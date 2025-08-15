@@ -51,6 +51,7 @@ def get_wall_distance(angle): # this function is expected to use after executing
             min_dist = d[1]
             min_abs = abs(d[0] - rad_a)
             min_index = i
+    
     return min_dist
 
 def polartoXY(angle,dist):
@@ -109,23 +110,17 @@ def forward_to_specified_dist(dist):
         lidar.update()
     sts.stop()
 
-def turn_corner():
-    if direct == 1:
-        sts.turn_right()
-    else:
-        sts.turn_left()
-
 def escape_from_parking():
     decide_clockwise()
     if direct == 1:
         sts.turn_right()
         sts.drive()
-        time.sleep(0.5)
+        time.sleep(0.7)
         sts.turn_left()
     else:
         sts.turn_left()
         sts.drive()
-        time.sleep(0.5)
+        time.sleep(0.7)
         sts.turn_right()
 
 def enter_to_parking():
@@ -176,7 +171,13 @@ def estimate_wall_angle(is_left=True):  # return wall angle (°) [0~360)
     wall_angle = -line_angle if is_left else line_angle  # adjust sign based on wall side
     return wall_angle
 
-
+def turn_corner():
+    curve_angle = estimate_wall_angle()*direct
+    # forward_to_specified_dist(0.6)
+    sts.drive(speed=90, degree=65*direct)
+    time.sleep(1.5*((90+curve_angle)/90))  # need to adjust
+    print(90+curve_angle)
+    sts.stop()
 
 class PID:
     def __init__(self, target=0, target_lane=1):
@@ -199,7 +200,7 @@ class PID:
         d = self._kd * (error - self._old_error)
         pid = p + i + d
         self._old_error = error
-        sts.drive(speed=80, degree=pid*self._k)
+        sts.drive(speed=50, degree=pid*self._k)
 
     def reset(self):
         self._old_error = 0
@@ -263,7 +264,7 @@ def switch_lane(target_lane):
         time.sleep(1)
         turn_right()
     sts.drive()
-    time.sleep(1)
+    time.sleep(1.5)
     pid._target_lane = target_lane
 
 
