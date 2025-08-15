@@ -40,7 +40,10 @@ class lidar_: # いい命名が思いつかないのでとりあえず衝突を�
             self.lidar.turnOff()
 
     def close_port(self):
-        self.lidar.disconnecting()
+        if self._is_ld06:
+            return
+        else:
+            self.lidar.disconnecting()
 
     def scan(self):
         scan = ydlidar.LaserScan()
