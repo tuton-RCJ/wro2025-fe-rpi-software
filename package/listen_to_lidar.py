@@ -12,6 +12,13 @@ def listen_to_lidar(port: str = '/dev/ttyAMA4') -> tuple[dict, callable]:
         'last_packet_data': None
     }
     data_channel = {'interrupt': False}
+    
+    full_rotation_data = {
+        'distances': {},
+        'packets': [],
+        'last_angle': None,
+        'rotation_complete': False
+    }
 
     def update_data():
         # in bytes (speed and start_angle + 13 measurements + end_angle and timestamp + crc_check)
@@ -48,7 +55,44 @@ def listen_to_lidar(port: str = '/dev/ttyAMA4') -> tuple[dict, callable]:
 
                     lidar_data = calc_lidar_data(buffer[0:-4])
 
-                    # cleanup outdated values
+                    current_start_angle = lidar_data.start_angle
+                    
+                    if full_rotation_data['last_angle'] is None:
+                        full_rotation_data['last_angle'] = current_start_angle
+                        full_rotation_data['rotation_complete'] = False
+                    
+                    if (full_rotation_data['last_angle'] > 270 and current_start_angle < 90):
+                        
+                        if full_rotation_data['packets']:
+                            combined_confidence = []
+                            combined_angles = []
+                            combined_distances = []
+                            
+                            for packet_data in full_rotation_data['packets']:
+                                combined_confidence.extend(packet_data.confidence_i)
+                                combined_angles.extend(packet_data.angle_i)
+                                combined_distances.extend(packet_data.distance_i)
+                            
+                            from calc_lidar_data import LidarData
+                            full_rotation_lidar = LidarData(
+                                start_angle=0.0,
+                                end_angle=360.0,
+                                crc_check=lidar_data.crc_check,
+                                speed=lidar_data.speed,
+                                time_stamp=lidar_data.time_stamp,
+                                confidence_i=combined_confidence,
+                                angle_i=combined_angles,
+                                distance_i=combined_distances
+                            )
+                            
+                            data['last_packet_data'] = full_rotation_lidar
+                            
+                        full_rotation_data['packets'] = []
+                        full_rotation_data['distances'] = {}
+
+                    full_rotation_data['packets'].append(lidar_data)
+                    full_rotation_data['last_angle'] = current_start_angle
+
                     for angle in lidar_data.angle_i:
                         start_angle, end_angle = lidar_data.start_angle, lidar_data.end_angle
                         # remove angle only if it is in the range of the current data packet
@@ -59,9 +103,6 @@ def listen_to_lidar(port: str = '/dev/ttyAMA4') -> tuple[dict, callable]:
                     # write new distance data to distances
                     for i, angle in enumerate(lidar_data.angle_i):
                         data['distances'][angle] = lidar_data.distance_i[i]
-
-                    # override last_packet_data
-                    data['last_packet_data'] = lidar_data
 
                     # reset buffer
                     buffer = ""
