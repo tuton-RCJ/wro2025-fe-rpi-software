@@ -284,7 +284,8 @@ if __name__ == "__main__":
             update_obj(red_dist, green_dist)
             now_index = get_index_strict(x)
             now_index, turn_cnt = check_should_turn(now_index, turn_cnt)
-
+            print(f"Turn Count: {turn_cnt}, Now Index: {now_index}, Red Dist: {red_dist}, Green Dist: {green_dist}")
+            print(f"obj: {objects[turn_cnt%4]}")
         while turn_cnt < 12:  
             lidar.update()
             pid.update()      
