@@ -14,8 +14,8 @@ sensor.skip_frames(time = 2000)
 sensor.set_auto_exposure(False,exposure_us=10000)
 sensor.skip_frames(time = 2000)
 clock = time.clock()
-thre_red = [(20, 75, 40, 60, 30, 60)]
-thre_green = [(30,100, -35, -15, -30, -10)]
+thre_red = [(20, 75, 30, 60, 30, 60)]
+thre_green = [(30,100, -30, -5, -40, -10)]
 colors = [
     (255, 0, 0),
     (0, 255, 0),
@@ -41,20 +41,20 @@ while(True):
     red = []
     max_red = 0
     max_rect = None
-    for obj in img.find_blobs(thre_green,area_threshold=300,merge=True,x_stride=1):
-        img.draw_rectangle(obj[:4],color=colors[5])
-        print(obj[2],obj[3])
-        if obj[3] / obj[2] > 1.3 and obj[3] > 25:
+    for obj in img.find_blobs(thre_green,merge=True,x_stride=1):
+        if 2.5 > obj[3] / obj[2] > 1.3 and 30 < (obj[1] + obj[3]//2) < 70 and obj[2]*obj[3] > 50:
+            img.draw_rectangle(obj[:4],color=colors[0])
+            print(obj[2],obj[3])
             max_rect = obj if max_rect is None or obj[2] * obj[3] > max_rect[2] * max_rect[3] else max_rect
     if not max_rect is None:
         green.append((max_rect[0]+max_rect[2]//2,max_rect[1]+max_rect[3]//2))
 
     max_green = 0
     max_rect = None
-    for obj in img.find_blobs(thre_red,area_threshold=300,merge=True,x_stride=1,margin=40):
-        img.draw_rectangle(obj[:4],color=colors[5])
+    for obj in img.find_blobs(thre_red,merge=True,x_stride=1):
         print(obj[2],obj[3])
-        if obj[3] / obj[2] > 1.3 and obj[3] > 25:
+        if 2.5 > obj[3] / obj[2] > 1.3 and 30 < (obj[1] + obj[3]//2) < 70 and obj[2]*obj[3] > 50:
+            img.draw_rectangle(obj[:4],color=colors[1])
             max_rect = obj if max_rect is None or obj[2] * obj[3] > max_rect[2] * max_rect[3] else max_rect
     if not max_rect is None:
         red.append((max_rect[0]+max_rect[2]//2,max_rect[1]+max_rect[3]//2))
