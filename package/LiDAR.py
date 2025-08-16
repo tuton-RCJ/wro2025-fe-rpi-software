@@ -55,7 +55,7 @@ class lidar_: # いい命名が思いつかないのでとりあえず衝突を�
     def update(self):
         if self._is_ld06:
             pts = self.lidar_data['last_packet_data']
-            angles = np.array([np.deg2rad(p) for p in pts.angle_i], dtype=np.float32)
+            angles = np.array([np.deg2rad(p+180) for p in pts.angle_i], dtype=np.float32)
             ranges = np.array([p for p in pts.distance_i], dtype=np.float32)
             intensities = np.array([p for p in pts.confidence_i], dtype=np.float32)
             self.points = np.stack((angles, ranges, intensities), axis=1)
