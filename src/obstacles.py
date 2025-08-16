@@ -246,6 +246,7 @@ def switch_lane(target_lane):
             sts.turn_left()
         elif old_lane == 0:
             sts.turn_left()
+            sts.drive()
             time.sleep(0.6)
             sts.turn_right()
     else:        
@@ -258,11 +259,13 @@ def switch_lane(target_lane):
                 sts.turn_left()
         elif old_lane == 2:
             sts.turn_left()
-            forward_to_specified_dist(0.7)
+            sts.drive()
+            time.sleep(0.6)
             sts.turn_right()
         elif old_lane == 0:
             sts.turn_right()
-            forward_to_specified_dist(0.7)
+            sts.drive()
+            time.sleep(0.6)
             sts.turn_left()
 
     pid._target_lane = target_lane
