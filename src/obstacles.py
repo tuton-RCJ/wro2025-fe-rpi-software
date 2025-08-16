@@ -104,9 +104,14 @@ def decide_clockwise():
     return direct
 
 def forward_to_specified_dist(dist):
-    sts.drive(40)
-    while get_wall_distance(0) > dist:
-        lidar.update()
+    if get_wall_distance(0) > dist:
+        sts.drive(40)
+        while get_wall_distance(0) > dist:
+            lidar.update()
+    else:
+        sts.drive(-40)
+        while get_wall_distance(0) < dist:
+            lidar.update()
     sts.stop()
 
 def escape_from_parking():
