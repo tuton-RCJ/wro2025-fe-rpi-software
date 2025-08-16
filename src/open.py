@@ -117,7 +117,7 @@ def turn_corner():
     curve_angle = estimate_wall_angle()*direct
     # forward_to_specified_dist(0.6)
     sts.drive(speed=90, degree=65*direct)
-    time.sleep(1.5*((90+curve_angle)/90))  # need to adjust
+    time.sleep(0.5*((90+curve_angle)/90))  # need to adjust
     print(90+curve_angle)
     sts.stop()
 

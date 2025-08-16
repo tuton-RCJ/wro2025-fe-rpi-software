@@ -9,7 +9,7 @@ import random
 
 sts = sts3032()
 uv = UnitV()
-lidar = lidar_()
+lidar = lidar_(is_ld06=True, port="/dev/ttyUSB0")
 lidar.turn_on()
 image_width = 160
 fov = 60 # degrees
@@ -111,17 +111,19 @@ def forward_to_specified_dist(dist):
     sts.stop()
 
 def escape_from_parking():
-    decide_clockwise()
+    print(decide_clockwise())
     if direct == 1:
         sts.turn_right()
-        sts.drive()
-        time.sleep(0.7)
+        sts.drive(80)
+        time.sleep(0.3)
         sts.turn_left()
+        print("a")
     else:
         sts.turn_left()
-        sts.drive()
-        time.sleep(0.7)
+        sts.drive(80)
+        time.sleep(0.3)
         sts.turn_right()
+    return
 
 def enter_to_parking():
     if direct == 1:
@@ -216,13 +218,7 @@ pid = PID()
 def drive_straight(il):
     pid.update(estimate_wall_angle(is_left=il))
 
-def turn_left():
-    sts.drive(90,65)
-    time.sleep(1)
 
-def turn_right():
-    sts.drive(90,-65)
-    time.sleep(1)
 
 def update_obj(red_dist, green_dist):
     if red_dist != float('inf'):
@@ -273,6 +269,7 @@ if __name__ == "__main__":
 
         lidar.update()
         escape_from_parking()
+        """
         now_index = 0
         turn_cnt = 0
 
@@ -305,9 +302,12 @@ if __name__ == "__main__":
         switch_lane(2)
         sts.stop()
         enter_to_parking()
+        """
         
     except KeyboardInterrupt:
         sts.stop()
         lidar.turn_off()
         print("Program terminated by user.")
-    
+    finally:
+        sts.stop()
+        lidar.turn_off()
