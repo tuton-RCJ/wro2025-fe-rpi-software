@@ -5,7 +5,6 @@ sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
 from UnitV import UnitV
 from STS3032 import sts3032
 from LiDAR import lidar_
-import random
 
 sts = sts3032()
 uv = UnitV()
