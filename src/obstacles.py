@@ -177,7 +177,7 @@ def turn_corner():
     curve_angle = estimate_wall_angle()*direct
     # forward_to_specified_dist(0.6)
     sts.drive(speed=90, degree=65*direct)
-    time.sleep(1.5*((90+curve_angle)/90))  # need to adjust
+    time.sleep(0.5*((90+curve_angle)/90))  # need to adjust
     print(90+curve_angle)
     sts.stop()
 
@@ -215,8 +215,8 @@ class PID:
 
 pid = PID()
 
-def drive_straight(il):
-    pid.update(estimate_wall_angle(is_left=il))
+def drive_straight():
+    pid.update(get_wall_distance(90 * direct))
 
 
 
@@ -244,21 +244,21 @@ def switch_lane(target_lane):
         return
     if old_lane == 1:
         if target_lane == 0:
-            turn_right()
-            turn_left()
+            sts.turn_right()
+            sts.turn_left()
         elif target_lane == 2:
-            turn_left()
-            turn_right()
+            sts.turn_left()
+            sts.turn_right()
     elif old_lane == 2:
-        turn_right()
+        sts.turn_right()
         sts.drive()
         time.sleep(1)
-        turn_left()
+        sts.turn_left()
     elif old_lane == 0:
-        turn_left()
+        sts.turn_left()
         sts.drive()
         time.sleep(1)
-        turn_right()
+        sts.turn_right()
     sts.drive()
     time.sleep(1.5)
     pid._target_lane = target_lane
@@ -269,7 +269,6 @@ if __name__ == "__main__":
 
         lidar.update()
         escape_from_parking()
-        """
         now_index = 0
         turn_cnt = 0
 
@@ -278,7 +277,7 @@ if __name__ == "__main__":
             lidar.update()
             red, green = uv.update_data()
             
-            drive_straight(True)
+            drive_straight()
 
             x = get_abs_dist()
             red_dist = get_obj_dist(red,x) if red != 255 else float('inf')
@@ -302,7 +301,6 @@ if __name__ == "__main__":
         switch_lane(2)
         sts.stop()
         enter_to_parking()
-        """
         
     except KeyboardInterrupt:
         sts.stop()
