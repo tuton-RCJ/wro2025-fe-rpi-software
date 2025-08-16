@@ -56,13 +56,12 @@ def listen_to_lidar(port: str = '/dev/ttyAMA4') -> tuple[dict, callable]:
                     lidar_data = calc_lidar_data(buffer[0:-4])
 
                     current_start_angle = lidar_data.start_angle
-                    
                     if full_rotation_data['last_angle'] is None:
                         full_rotation_data['last_angle'] = current_start_angle
                         full_rotation_data['rotation_complete'] = False
-                    
-                    if (full_rotation_data['last_angle'] > 270 and current_start_angle < 90):
-                        
+
+                    if (full_rotation_data['last_angle'] > 350 and current_start_angle < 10 and len(full_rotation_data['packets']) > 30):
+
                         if full_rotation_data['packets']:
                             combined_confidence = []
                             combined_angles = []
@@ -86,6 +85,7 @@ def listen_to_lidar(port: str = '/dev/ttyAMA4') -> tuple[dict, callable]:
                             )
                             
                             data['last_packet_data'] = full_rotation_lidar
+
                             
                         full_rotation_data['packets'] = []
                         full_rotation_data['distances'] = {}

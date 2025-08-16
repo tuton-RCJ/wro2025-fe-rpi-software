@@ -1,7 +1,7 @@
 from scservo_sdk import *
 import time 
 class sts3032:
-    def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=0, default_speed=50):
+    def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=4050, default_speed=50):
         self.portHandler = PortHandler(port)
         self.packetHandler = sms_sts(self.portHandler)
         self.front_servo_id = front_servo_id
