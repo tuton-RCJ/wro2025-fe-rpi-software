@@ -1,11 +1,11 @@
+from UnitV import UnitV
+from STS3032 import sts3032
+from LiDAR import lidar_
 import sys
 import time
 import numpy as np
 
 sys.path.append('/home/tuton/wro2025-fe-rpi-software/package')
-from LiDAR import lidar_
-from STS3032 import sts3032
-from UnitV import UnitV
 
 
 sts = sts3032()
@@ -19,7 +19,7 @@ target_dist = [0.2, 0.5, 0.2]
 thres_forward_dist = 0.6
 
 
-def get_dist(angle): # this function is expected to use after executing lidar.update()
+def get_dist(angle):  # this function is expected to use after executing lidar.update()
     rad_a = np.deg2rad(angle)
     # print(rad_a)
     rad_a %= np.pi * 2
@@ -27,8 +27,8 @@ def get_dist(angle): # this function is expected to use after executing lidar.up
     min_abs = float('inf')
     min_dist = -1
     min_index = -1
-    for i,d in enumerate(lidar.points):
-        if abs(d[0]%(np.pi*2) - rad_a) < min_abs:
+    for i, d in enumerate(lidar.points):
+        if abs(d[0] % (np.pi*2) - rad_a) < min_abs:
             min_dist = d[1]
             min_abs = abs(d[0] - rad_a)
             min_index = i
@@ -59,9 +59,9 @@ def forward_to_specified_dist(dist: float):
 def estimate_wall_angle():  # return wall angle (°) [0~360)
     lidar_data = []
     calc_range = 10  # range of angles to consider(half)
-    for i in range(0, calc_range+1,10):
+    for i in range(0, calc_range+1, 10):
         lidar_data.append((i, get_dist(i)))
-    for i in range(3600-calc_range, 360,10):
+    for i in range(3600-calc_range, 360, 10):
         lidar_data.append((i, get_dist(i)))
 
     data = np.array(lidar_data, dtype=float)
@@ -84,13 +84,16 @@ def estimate_wall_angle():  # return wall angle (°) [0~360)
     return wall_angle
 
 
-def estimate_left_wall_angle():  # return wall angle (°) [0~360)
+def estimate_wall_angle(isLeft: bool):  # return wall angle (°) [0~360)
     lidar_data = []
     calc_range = 20  # range of angles to consider(half)
-    for i in range(90, 90 + calc_range+1,10):
-        lidar_data.append((i-90, get_dist(i)))
-    for i in range(90-calc_range, 90,10):
-        lidar_data.append((i+270, get_dist(i)))
+    last_d = 0
+    for i in range((90 if isLeft else 270)-calc_range, (90 if isLeft else 270) + calc_range+1, 10):
+        now_d = get_dist(i)
+        lidar_data.append((i-90, now_d))
+        if last_d != 0 and abs(now_d - last_d) > 0.1:  # filter out noise
+            return 0
+        last_d = now_d
 
     data = np.array(lidar_data, dtype=float)
     angles = np.deg2rad(data[:, 0])
@@ -108,9 +111,8 @@ def estimate_left_wall_angle():  # return wall angle (°) [0~360)
 
     # calc wall angle
     line_angle = np.rad2deg(np.arctan(m))
-    wall_angle = -line_angle  # need to adjust?
+    wall_angle = -line_angle if isLeft else line_angle
     return wall_angle
-
 
 
 def turn_corner():
@@ -133,8 +135,8 @@ class PID:
         self._Imax = 100
         self._target = target
 
-    def update(self,current):
-        
+    def update(self, current):
+
         error = self._target - current
 
         p = self._kp * error
@@ -155,31 +157,24 @@ class PID:
 
 
 def drive_straight():
-    pid.update(estimate_left_wall_angle())
+    pid.update(estimate_wall_angle(direct == 1))
     # sts.drive(speed=80)
 
-pid=PID()
 
+pid = PID()
 
 
 if __name__ == "__main__":
-    
+
     try:
         sts.stop()
 
-        # while True:
-        #     lidar.update()
-        #     print(estimate_wall_angle())
-        #     time.sleep(0.1)
-        
-        lidar.update()
-        # decide_clockwise()
-        # turn_corner()
-        # time.sleep(1)
         turn_cnt = 0
         while turn_cnt < 12:
             lidar.update()
             drive_straight()
+            if (turn_cnt == 0):
+                decide_clockwise()
             if get_dist(0) < 0.6:
                 decide_clockwise()
                 turn_corner()
