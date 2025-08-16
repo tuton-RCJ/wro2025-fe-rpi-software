@@ -16,7 +16,6 @@ direct = 1 # 1 if clockwise else -1
 turn_cnt = 0
 thres_forward_dist = 0.6
 cut_line = [0.75,1.25,1.75,2.55]
-target_dist = [0.3, 0.5, 0.3]
 objects = [[-1 for j in range(3)] for i in range(4)] #  -1: there are no obstacles, 2: red , 0: green 
 
 def get_index(x):
@@ -182,7 +181,7 @@ def turn_corner():
     sts.stop()
 
 class PID:
-    def __init__(self, target_lane=1):
+    def __init__(self, target=0, target_lane=1):
         self._kp = 2
         self._ki = 0
         self._kd = 0.1
@@ -190,7 +189,7 @@ class PID:
         self._old_error = 0
         self._integral = 0
         self._Imax = 100
-        self._target = target_dist[target_lane]
+        self._target = target
         self._target_lane = target_lane
 
     def update(self,current):
@@ -211,8 +210,7 @@ class PID:
     def switch_lane(self, target_lane):
         if self._target_lane != target_lane:
             self._target_lane = target_lane
-            self._target = target_dist[target_lane]
-        self.reset()
+            self.reset()
 
 pid = PID()
 
@@ -229,6 +227,46 @@ def update_obj(red_dist, green_dist):
         if get_index(green_dist) != -1:
             objects[turn_cnt%4][get_index(green_dist)] = 0
 
+def switch_lane(target_lane):
+    old_lane = pid._target_lane
+    if old_lane == target_lane:
+        return
+    if direct == 1:
+        if old_lane == 1:
+            if target_lane == 0:
+                sts.turn_right()
+                sts.turn_left()
+            elif target_lane == 2:
+                sts.turn_left()
+                sts.turn_right()
+        elif old_lane == 2:
+            sts.turn_right()
+            sts.drive()
+            time.sleep(0.6)
+            sts.turn_left()
+        elif old_lane == 0:
+            sts.turn_left()
+            time.sleep(0.6)
+            sts.turn_right()
+    else:        
+        if old_lane == 1:
+            if target_lane == 0:
+                sts.turn_left()
+                sts.turn_right()
+            elif target_lane == 2:
+                sts.turn_right()
+                sts.turn_left()
+        elif old_lane == 2:
+            sts.turn_left()
+            forward_to_specified_dist(0.7)
+            sts.turn_right()
+        elif old_lane == 0:
+            sts.turn_right()
+            forward_to_specified_dist(0.7)
+            sts.turn_left()
+
+    pid._target_lane = target_lane
+
 def check_should_turn(now_index, turn_cnt):
     if now_index == 3 and get_wall_distance(90*(-direct)):
         turn_corner()
@@ -236,7 +274,10 @@ def check_should_turn(now_index, turn_cnt):
         turn_cnt += 1
         pid._target_lane = 1
     elif pid._target_lane != objects[turn_cnt%4][now_index] and objects[turn_cnt%4][now_index] != -1:
-        pid.switch_lane(objects[turn_cnt%4][now_index])
+        switch_lane(objects[turn_cnt%4][now_index])
+    
+
+
 
 if __name__ == "__main__":
     try:
@@ -250,6 +291,7 @@ if __name__ == "__main__":
 
             lidar.update()
             red, green = uv.update_data()
+            
             drive_straight()
 
             x = get_abs_dist()
@@ -260,21 +302,19 @@ if __name__ == "__main__":
             now_index, turn_cnt = check_should_turn(now_index, turn_cnt)
             print(f"Turn Count: {turn_cnt}, Now Index: {now_index}, Red Dist: {red_dist}, Green Dist: {green_dist}")
             print(f"obj: {objects[turn_cnt%4]}")
-
         while turn_cnt < 12:  
             lidar.update()
             pid.update()      
             x = get_abs_dist()
             now_index = get_index_strict(x)
             now_index, turn_cnt = check_should_turn(now_index, turn_cnt)
-            print(f"Turn Count: {turn_cnt}, Now Index: {now_index}, Red Dist: {red_dist}, Green Dist: {green_dist}")
-            print(f"obj: {objects[turn_cnt%4]}")
 
         while get_wall_distance(0) > 1.8:
             lidar.update()
             red, green = uv.update_data()
             pid.update()
 
+        switch_lane(2)
         sts.stop()
         enter_to_parking()
         
