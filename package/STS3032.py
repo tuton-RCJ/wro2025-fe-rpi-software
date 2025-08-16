@@ -1,7 +1,7 @@
 from scservo_sdk import *
 import time 
 class sts3032:
-    def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=4050, default_speed=50):
+    def __init__(self, port="/dev/ttyAMA5", front_servo_id=3, back_servo_id=2, center_degree=2050, default_speed=80):
         self.portHandler = PortHandler(port)
         self.packetHandler = sms_sts(self.portHandler)
         self.front_servo_id = front_servo_id
@@ -27,7 +27,7 @@ class sts3032:
             
         scs_model_number, scs_comm_result, scs_error = self.packetHandler.ping(self.front_servo_id)
         if scs_comm_result != COMM_SUCCESS:
-            print("%s" % self.packetHandler.getTxRxResult(scs_comm_result), scs_comm_result)
+            print("%s" % self.packetHandler.getTxRxResult(scs_comm_result))
             flag = False
         else:
             print("[ID:%03d] ping to front servo Succeeded. SCServo model number : %d" % (self.front_servo_id, scs_model_number))
@@ -36,7 +36,7 @@ class sts3032:
             print("%s" % self.packetHandler.getRxPacketError(scs_error), scs_comm_result)
         self.packetHandler.ServoMode(self.front_servo_id)
         print("Front servo is set to servo mode")
-        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, 0, 0)
+        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, 7000, 0)
         time.sleep(1)
             
         scs_model_number, scs_comm_result, scs_error = self.packetHandler.ping(self.back_servo_id)
@@ -59,53 +59,45 @@ class sts3032:
         """[summary]
         Args:
             speed (int): Speed of the back servo. Range is 1 to 100.
-            degree (float): Degree of the front servo. Degrees is restricted to -30° to 30°. 
+            degree (float): Degree of the front servo. Degrees is restricted to -65° to 65°. 
         """
         self.stop()
         time.sleep(0.01)
         if speed == -1:
             speed = self.default_speed
         else:
-            speed = max(1, min(speed, 100))
+            speed = max(-100, min(-speed, 100))
         if degree == -1:
             degree = 0
         else:
             degree = max(-self.max_deg, min(degree, self.max_deg))
         speed *= 75
-        degree = int(degree/360 * 4096 + self.center_degree) 
-        degree %= 4096
-        self.packetHandler.WritePosEx(self.front_servo_id, degree, speed, 0)
-        print(degree, speed, degree/speed)
+        target_degree = self.center_degree + int(degree/360 * 4096)
+        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, 7000, 0)
+        time.sleep(0.1)
         self.packetHandler.WriteSpec(self.back_servo_id, speed, 0)
     
-    def turn_left(self,speed=90,angle=55):
-        if speed == -1:
-            speed = self.default_speed
-        angle = min(angle, self.max_deg)
-        target_degree = self.center_degree + int(angle/360 * 4096)
-        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
-        time.sleep(0.1)
-        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(1.7)
-        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
-        time.sleep(0.1)
-        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
-        time.sleep(0.1)
-
-    def turn_right(self, speed=90, angle=40):
+    def turn_left(self,speed=80,angle=65):
         if speed == -1:
             speed = self.default_speed
         angle = min(angle, self.max_deg)
         target_degree = self.center_degree - int(angle/360 * 4096)
         self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
         time.sleep(0.1)
-        self.packetHandler.WriteSpec(self.back_servo_id, speed * 75, 0)
-        time.sleep(1.7)
-        self.packetHandler.WriteSpec(self.back_servo_id, 0, 0)
-        time.sleep(0.1)
-        self.packetHandler.WritePosEx(self.front_servo_id, self.center_degree, self.default_speed * 75, 0)
-        time.sleep(0.1)
+        self.packetHandler.WriteSpec(self.back_servo_id, -speed * 75, 0)
+        time.sleep(0.45)
+        self.stop()
 
+    def turn_right(self, speed=80, angle=65):
+        if speed == -1:
+            speed = self.default_speed
+        angle = min(angle, self.max_deg)
+        target_degree = self.center_degree + int(angle/360 * 4096)
+        self.packetHandler.WritePosEx(self.front_servo_id, target_degree, speed * 75, 0)
+        time.sleep(0.1)
+        self.packetHandler.WriteSpec(self.back_servo_id, -speed * 75, 0)
+        time.sleep(0.65)
+        self.stop()
 
     def close_port(self):
         self.portHandler.closePort()
